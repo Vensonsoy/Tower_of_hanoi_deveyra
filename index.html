@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tower of Hanoi</title>
+<style>
+:root{--felt:#123b34;--deep:#071a18;--ivory:#f3ead6;--brass1:#f0d27a;--brass2:#b98a2e;--brass3:#7a5614;--wood1:#a8693a;--wood2:#5b3318}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ivory);font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;background:radial-gradient(ellipse 90% 70% at 50% 0%,#2b6e5e 0%,var(--felt) 45%,var(--deep) 100%) fixed;padding:20px 16px 40px}
+.app{max-width:1000px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 26px;margin-bottom:18px}
+h1{margin:0;font:700 clamp(2rem,5vw,3.2rem)/1.1 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;background:linear-gradient(180deg,var(--brass1),var(--brass2));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45))}
+.lede{margin:0;max-width:36ch;font:italic 1rem/1.4 Georgia,serif;color:#cfc4a8}
+.stats{display:flex;flex-wrap:wrap;margin-bottom:22px;border-radius:12px;background:linear-gradient(180deg,rgba(0,0,0,.38),rgba(0,0,0,.2));box-shadow:inset 0 0 0 1px rgba(240,210,122,.35),0 8px 20px rgba(0,0,0,.3)}
+.stat{flex:1 1 120px;padding:10px 14px;border-left:1px solid rgba(240,210,122,.2)}
+.stat:first-child{border-left:0}
+.stat small{display:block;color:#b9ae92;font-size:.74rem}
+.stat b{font:700 1.4rem Georgia,serif;font-variant-numeric:tabular-nums;color:var(--brass1)}
+.prog{height:5px;border-radius:3px;background:rgba(0,0,0,.45);margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brass2),var(--brass1));transition:width .3s}
+.board{position:relative;width:calc(100% - 16px);margin:0 8px;height:clamp(260px,52vw,420px);border-radius:16px;overflow:hidden;user-select:none;background:radial-gradient(ellipse 60% 90% at 50% 15%,rgba(255,236,170,.24),rgba(255,236,170,0) 70%),linear-gradient(180deg,#194d43,#0e2f29);box-shadow:0 0 0 6px var(--wood2),0 0 0 8px var(--brass2),0 26px 50px rgba(0,0,0,.55),inset 0 0 60px rgba(0,0,0,.45)}
+.zone{position:absolute;top:0;bottom:0;width:33.3333%;background:none;border:0;padding:0;cursor:pointer;color:inherit}
+.zone:focus-visible{outline:3px solid var(--brass1);outline-offset:-3px}
+.zone.sel{background:radial-gradient(ellipse at 50% 100%,rgba(240,210,122,.3),rgba(240,210,122,0) 70%);box-shadow:inset 0 0 0 2px rgba(240,210,122,.55)}
+.zone.bad{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.peg{position:absolute;border-radius:6px 6px 0 0;background:linear-gradient(90deg,#5b3318,#d6a06a 40%,#e9bf8c 52%,#5b3318);box-shadow:3px 0 8px rgba(0,0,0,.4);pointer-events:none}
+.peg::before{content:"";position:absolute;left:50%;top:-7px;width:150%;height:14px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at 40% 30%,var(--brass1),var(--brass2) 55%,var(--brass3))}
+.base{position:absolute;left:0;right:0;bottom:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,rgba(0,0,0,0) 2px 9px),linear-gradient(180deg,var(--wood1),var(--wood2));border-top:3px solid var(--brass1);box-shadow:0 -6px 14px rgba(0,0,0,.35);pointer-events:none}
+.lbl{position:absolute;bottom:0;top:0;width:33.3333%;display:flex;align-items:center;justify-content:center;pointer-events:none;font:700 clamp(.7rem,2vw,.95rem) Georgia,serif;letter-spacing:.1em;color:#f3d98f;text-shadow:0 -1px 0 rgba(0,0,0,.65)}
+.ring{position:absolute;pointer-events:none;display:flex;align-items:center;justify-content:center;font:700 12px Georgia,serif;color:rgba(255,255,255,.85);text-shadow:0 1px 1px rgba(0,0,0,.5);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c) 38%,color-mix(in srgb,var(--c) 72%,#000));box-shadow:0 5px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -4px 5px rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.15)}
+.ring::after{content:"";position:absolute;left:10%;right:10%;top:12%;height:26%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0))}
+.ring.lift{z-index:3;box-shadow:0 16px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -4px 5px rgba(0,0,0,.28),0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.msg{min-height:1.5em;margin:22px 4px 18px;font:italic 1rem Georgia,serif;color:#e7d6a2}
+.controls{display:flex;flex-wrap:wrap;gap:14px 10px;align-items:center}
+button.btn,select{font:inherit;font-weight:700;letter-spacing:.05em;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;color:var(--ivory)}
+button.btn{background:linear-gradient(180deg,#2c6a5c,#1b4a40);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 0 #0a2822,0 8px 14px rgba(0,0,0,.4);transition:transform .08s,box-shadow .08s}
+button.btn:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 #0a2822}
+button.btn.primary{background:linear-gradient(180deg,#e2503a,#a8261a);color:#ffe9b0;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 0 #5e130c,0 8px 14px rgba(0,0,0,.4)}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+#soundBtn[aria-pressed=false]{background:linear-gradient(180deg,#555,#333)}
+select{background:#0c2a25;box-shadow:inset 0 0 0 1px rgba(240,210,122,.4)}
+button.btn:focus-visible,select:focus-visible{outline:3px solid var(--brass1);outline-offset:2px}
+.group{display:flex;gap:4px;align-items:center;padding:4px;border-radius:12px;background:rgba(0,0,0,.35);box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 0 1px rgba(240,210,122,.2)}
+.group span{padding:0 8px;font-size:.85rem;color:#b9ae92}
+.group select{padding:8px 10px}
+.group .btn,.group .btn:active:not(:disabled){padding:8px 11px;font-size:.82rem;background:transparent;box-shadow:none;transform:none}
+.group .btn[aria-pressed=true]{background:linear-gradient(180deg,var(--brass1),var(--brass2));color:#2b1a05;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.overlay{position:fixed;inset:0;background:rgba(3,12,10,.8);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.overlay.show{display:flex}
+.card{background:radial-gradient(ellipse at 50% 0%,#24655a,#0f302a);border-radius:18px;padding:30px;max-width:400px;width:100%;text-align:center;box-shadow:0 0 0 3px var(--brass2),0 0 0 7px #0f302a,0 0 0 8px var(--brass1),0 30px 60px rgba(0,0,0,.6);animation:pop .35s}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.card h2{margin:0 0 14px;font:700 2.1rem Georgia,serif;background:linear-gradient(180deg,var(--brass1),var(--brass2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card p{margin:6px 0}.card b{color:var(--brass1)}
+.card .btn{margin-top:18px}
+@media(max-width:600px){.controls .btn{flex:1 1 40%}.group .btn{flex:0 1 auto}}
+@media(prefers-reduced-motion:reduce){.card{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>Tower of Hanoi ni Soysoy</h1><p class="lede">Carry the whole stack from Tower A to Tower C. A larger disk never rests on a smaller one.</p></header>
+  <div class="stats">
+    <div class="stat"><small>Moves</small><b id="moves">0</b></div>
+    <div class="stat"><small>Minimum moves</small><b id="min">31</b></div>
+    <div class="stat"><small>Time</small><b id="time">0:00.0</b></div>
+    <div class="stat"><small>Status</small><b id="status">Ready</b></div>
+    <div class="stat"><small>Speed</small><b id="speedLbl">Normal</b></div>
+    <div class="stat"><small>On Tower C</small><b id="prog">0 / 5</b><div class="prog"><i id="bar"></i></div></div>
+  </div>
+
+  <div class="board" id="board">
+    <button class="zone" style="left:0" data-i="0" aria-label="Tower A"></button>
+    <button class="zone" style="left:33.3333%" data-i="1" aria-label="Tower B"></button>
+    <button class="zone" style="left:66.6666%" data-i="2" aria-label="Tower C"></button>
+    <div class="base" id="base"><div class="lbl" style="left:0">Tower A</div><div class="lbl" style="left:33.3333%">Tower B</div><div class="lbl" style="left:66.6666%">Tower C</div></div>
+  </div>
+  <div class="msg" id="msg">Click a tower, then another tower to move a disk, or press AUTO SOLVE.</div>
+
+  <div class="controls">
+    <button class="btn primary" id="solveBtn">AUTO SOLVE</button>
+    <button class="btn" id="pauseBtn" disabled>PAUSE</button>
+    <button class="btn" id="resumeBtn" disabled>RESUME</button>
+    <button class="btn" id="resetBtn">RESET</button>
+    <button class="btn" id="soundBtn" aria-pressed="true">SOUND: ON</button>
+    <label class="group"><span>Disks</span>
+      <select id="diskSel" aria-label="Number of disks"></select></label>
+    <div class="group" id="speedGroup" role="group" aria-label="Animation speed">
+      <button class="btn" data-s="slow" aria-pressed="false">Slow</button>
+      <button class="btn" data-s="normal" aria-pressed="true">Normal</button>
+      <button class="btn" data-s="fast" aria-pressed="false">Fast</button>
+      <button class="btn" data-s="vfast" aria-pressed="false">Very Fast</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="card">
+    <h2>PUZZLE SOLVED!</h2>
+    <p>Total moves: <b id="oMoves"></b></p>
+    <p>Minimum possible moves: <b id="oMin"></b></p>
+    <p>Solving time: <b id="oTime"></b></p>
+    <button class="btn primary" id="againBtn">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+/* ================= Game logic (pure, no DOM) ================= */
+const minMoves = k => 2 ** k - 1;
+const canMove = (pegs, f, t) => {
+  if (f === t || !pegs[f].length) return false;
+  const d = pegs[f][pegs[f].length - 1], top = pegs[t][pegs[t].length - 1];
+  return top === undefined || top > d;
+};
+
+/* ================= Sound (Web Audio) ================= */
+const Sound = {
+  ctx: null, on: true, last: {}, noiseBuf: null,
+  init() {
+    if (!this.ctx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      this.ctx = new C();
+      this.noiseBuf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.1, this.ctx.sampleRate);
+      const d = this.noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  ready(kind, gap) {                              // avoid stacked/overlapping sounds
+    if (!this.on || !this.ctx) return false;
+    const now = performance.now();
+    if (now - (this.last[kind] || 0) < gap) return false;
+    this.last[kind] = now; return true;
+  },
+  tone(f, dur, type, vol, to, delay = 0) {
+    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  },
+  thud(vol) {
+    const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noiseBuf; f.type = 'bandpass'; f.frequency.value = 900;
+    g.gain.setValueAtTime(vol, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08);
+    s.connect(f).connect(g).connect(c.destination); s.start();
+  },
+  pick() { if (!this.ready('pick', 50)) return; this.tone(950, 0.06, 'triangle', 0.22, 600); this.tone(1900, 0.03, 'sine', 0.06, 1500); },
+  drop() { if (!this.ready('drop', 50)) return; this.tone(170, 0.14, 'sine', 0.45, 70); this.thud(0.25); },
+  win() { if (!this.on || !this.ctx) return; [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.25, null, i * 0.12)); }
+};
+
+/* ================= Game state & animation ================= */
+const $ = id => document.getElementById(id);
+const board = $('board'), zones = [...board.querySelectorAll('.zone')];
+const COLORS = ['#ef476f', '#f78c3b', '#ffd23f', '#3bd49a', '#2ab7ca', '#4a7cf0', '#8e5cf0', '#d85fc4'];
+const SPEEDS = { slow: ['Slow', 2], normal: ['Normal', 1], fast: ['Fast', 0.5], vfast: ['Very Fast', 0.2] };
+let n = 5, pegs = [[], [], []], rings = {}, pegEls = [], geo = {};
+let epoch = 0, solving = false, paused = false, busy = false, moves = 0, selected = null;
+let speedKey = 'normal', status = 'Ready', gateResolve = null;
+const clock = { acc: 0, start: 0, running: false };
+// Prolog (hanoi.pl) owns the rules: solving, move validation, move count, completion.
+const api = p => fetch(p).then(r => r.json()).catch(e => { setMsg(location.protocol === 'file:' ? 'Do not open this file directly. Run: swipl hanoi.pl, then open http://localhost:8080/' : 'Prolog server not reachable. Is swipl hanoi.pl still running?'); throw e; });
+let resetP = Promise.resolve(), serverMin = null;
+
+function computeGeo() {
+  const W = board.clientWidth, H = board.clientHeight, baseH = Math.max(24, H * 0.08);
+  const rh = Math.min(34, (H - baseH - 24) / (n + 2)), sp = W / 3;
+  const maxW = Math.min(sp * 0.92, 260), minW = Math.min(Math.max(rh * 2.4, 36), maxW * 0.6);
+  geo = { W, H, baseH, rh, pegTop: rh + 12, maxW, minW, sp };
+}
+const cx = i => geo.sp * (i + 0.5);
+const ringW = s => n === 1 ? geo.maxW : geo.minW + (geo.maxW - geo.minW) * (s - 1) / (n - 1);
+const ringTop = lvl => geo.H - geo.baseH - (lvl + 1) * geo.rh;
+
+function buildRings() {
+  board.querySelectorAll('.ring').forEach(r => { r.getAnimations().forEach(a => a.cancel()); r.remove(); });
+  pegs = [Array.from({ length: n }, (_, i) => n - i), [], []]; rings = {};
+  for (let s = n; s >= 1; s--) {
+    const el = document.createElement('div');
+    el.className = 'ring'; el.style.setProperty('--c', COLORS[s - 1]); el.textContent = s; rings[s] = el; board.appendChild(el);
+  }
+}
+function layout() {
+  computeGeo();
+  $('base').style.height = geo.baseH + 'px';
+  pegEls.forEach(p => p.remove()); pegEls = [];
+  for (let i = 0; i < 3; i++) {
+    const p = document.createElement('div'), w = Math.max(8, geo.rh * 0.4);
+    p.className = 'peg';
+    Object.assign(p.style, { width: w + 'px', left: cx(i) - w / 2 + 'px', top: geo.pegTop + 'px', height: geo.H - geo.baseH - geo.pegTop + 'px' });
+    board.insertBefore(p, $('base')); pegEls.push(p);
+  }
+  pegs.forEach((stack, p) => stack.forEach((s, lvl) => {
+    const el = rings[s];
+    Object.assign(el.style, { width: ringW(s) + 'px', height: geo.rh + 'px', borderRadius: geo.rh / 2 + 'px', fontSize: geo.rh * 0.5 + 'px', left: cx(p) - ringW(s) / 2 + 'px', top: ringTop(lvl) + 'px' });
+  }));
+}
+
+function tween(el, prop, a, b, base, my) {
+  const d = Math.max(30, base * SPEEDS[speedKey][1]);       // speed is read live for every stage
+  const an = el.animate([{ [prop]: a + 'px' }, { [prop]: b + 'px' }], { duration: d, easing: 'ease-in-out', fill: 'forwards' });
+  return an.finished.then(() => { if (my === epoch) el.style[prop] = b + 'px'; an.cancel(); });
+}
+
+async function doMove(f, t, my) {
+  if (my !== epoch || busy || !canMove(pegs, f, t)) return false;
+  busy = true;
+  const size = pegs[f][pegs[f].length - 1], el = rings[size];
+  try {
+    await resetP;
+    const r = await api(`/api/move?from=${f}&to=${t}`);      // Prolog validates and counts the move
+    if (my !== epoch || !r.ok) return false;
+    if (!paused) startClock();
+    if (status === 'Ready') setStatus('Playing');
+    const w = ringW(size), x0 = cx(f) - w / 2, x1 = cx(t) - w / 2;
+    const y0 = ringTop(pegs[f].length - 1), y1 = ringTop(pegs[t].length), yUp = 4;
+    el.classList.add('lift'); Sound.pick();
+    await tween(el, 'top', y0, yUp, 220, my);                // 1. up
+    await tween(el, 'left', x0, x1, 340, my);                // 2. across
+    await tween(el, 'top', yUp, y1, 220, my);                // 3. down
+    if (my !== epoch) return false;
+    pegs[t].push(pegs[f].pop()); moves = r.moves; Sound.drop();
+    el.classList.remove('lift'); updateUI();
+    if (r.solved) complete(my);
+    return true;
+  } catch (e) { return false; }                              // animation cancelled by reset
+  finally { if (my === epoch) busy = false; }
+}
+
+async function autoSolve() {
+  if (solving || busy) return;
+  if (moves > 0 || pegs[0].length !== n) resetGame();
+  const my = epoch; solving = true; selected = null; updateUI();
+  let list;
+  try { await resetP; list = (await api('/api/solve?n=' + n)).moves; } catch (e) { solving = false; updateUI(); return; }
+  if (my !== epoch) return;
+   setMsg(`Solving with ${list.length} moves…`); updateUI();
+  for (const [f, t] of list) {
+    if (paused) await new Promise(r => (gateResolve = r));   // pause gate between moves
+    if (my !== epoch) return;
+    const ok = await doMove(f, t, my);
+    if (my !== epoch) return;
+    if (!ok) { solving = false; updateUI(); return; }
+  }
+}
+function pause() { if (!solving || paused) return; paused = true; stopClock(); setStatus('Paused'); setMsg('Paused. The current move finishes, then solving waits.'); updateUI(); }
+function resume() { if (!solving || !paused) return; paused = false; startClock(); setStatus('Playing'); setMsg(''); updateUI(); if (gateResolve) { gateResolve(); gateResolve = null; } }
+
+function resetGame() {
+  epoch++; busy = solving = paused = false; moves = 0; selected = null;
+  if (gateResolve) { gateResolve(); gateResolve = null; }
+  clock.acc = 0; clock.running = false;
+  $('overlay').classList.remove('show');
+  buildRings(); layout(); setStatus('Ready');
+  serverMin = null; resetP = api('/api/reset?n=' + n).then(r => { if (r.n === n) { serverMin = r.min; updateUI(); } });
+  setMsg('Click a tower, then another tower to move a disk, or press AUTO SOLVE.'); updateUI();
+}
+function complete(my) {
+  solving = false; stopClock(); setStatus('Completed'); Sound.win(); updateUI();
+  setTimeout(() => {
+    if (my !== epoch) return;
+    $('oMoves').textContent = moves; $('oMin').textContent = serverMin ?? minMoves(n); $('oTime').textContent = fmt(elapsed());
+    $('overlay').classList.add('show'); $('againBtn').focus();
+  }, 500);
+}
+
+/* ================= Clock, UI ================= */
+const elapsed = () => clock.acc + (clock.running ? performance.now() - clock.start : 0);
+const startClock = () => { if (!clock.running) { clock.running = true; clock.start = performance.now(); } };
+const stopClock = () => { if (clock.running) { clock.acc += performance.now() - clock.start; clock.running = false; } };
+const fmt = ms => { const s = ms / 1000; return `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`; };
+function setStatus(s) { status = s; $('status').textContent = s; }
+function setMsg(m) { $('msg').textContent = m; }
+function updateUI() {
+  $('moves').textContent = moves; $('min').textContent = serverMin ?? minMoves(n);
+  $('prog').textContent = `${pegs[2].length} / ${n}`; $('bar').style.width = pegs[2].length / n * 100 + '%';
+  $('solveBtn').disabled = solving;
+  $('pauseBtn').disabled = !solving || paused; $('resumeBtn').disabled = !solving || !paused;
+  zones.forEach((z, i) => z.classList.toggle('sel', selected === i));
+}
+setInterval(() => { $('time').textContent = fmt(elapsed()); }, 100);
+
+/* ================= Events ================= */
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => Sound.init()));
+zones.forEach((z, i) => z.addEventListener('click', async () => {
+  if (solving || busy || status === 'Completed') return;
+  if (selected === null) { if (pegs[i].length) selected = i; else setMsg('That tower is empty. Pick a tower with a disk.'); updateUI(); return; }
+  const f = selected; selected = null; updateUI();
+  if (f === i) return;
+  if (!canMove(pegs, f, i)) { z.classList.add('bad'); setTimeout(() => z.classList.remove('bad'), 300); setMsg("A larger disk can't go on a smaller one."); return; }
+  setMsg(''); await doMove(f, i, epoch);
+}));
+$('solveBtn').onclick = autoSolve; $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
+$('resetBtn').onclick = resetGame; $('againBtn').onclick = resetGame;
+$('soundBtn').onclick = e => {
+  Sound.init(); Sound.on = !Sound.on;
+  e.target.textContent = 'SOUND: ' + (Sound.on ? 'ON' : 'OFF'); e.target.setAttribute('aria-pressed', Sound.on);
+};
+$('speedGroup').onclick = e => {
+  const k = e.target.dataset.s; if (!k) return;
+  speedKey = k; $('speedLbl').textContent = SPEEDS[k][0];
+  $('speedGroup').querySelectorAll('.btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === k));
+};
+for (let k = 3; k <= 8; k++) $('diskSel').add(new Option(`${k} disks`, k, false, k === n));
+$('diskSel').onchange = e => { n = +e.target.value; resetGame(); };
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (!busy) layout(); }, 80); });
+
+resetGame();
+</script>
+</body>
+</html>
