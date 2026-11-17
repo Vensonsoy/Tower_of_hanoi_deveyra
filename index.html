@@ -161,8 +161,38 @@ let n = 5, pegs = [[], [], []], rings = {}, pegEls = [], geo = {};
 let epoch = 0, solving = false, paused = false, busy = false, moves = 0, selected = null;
 let speedKey = 'normal', status = 'Ready', gateResolve = null;
 const clock = { acc: 0, start: 0, running: false };
-// Prolog (hanoi.pl) owns the rules: solving, move validation, move count, completion.
-const api = p => fetch(p).then(r => r.json()).catch(e => { setMsg(location.protocol === 'file:' ? 'Do not open this file directly. Run: swipl hanoi.pl, then open http://localhost:8080/' : 'Prolog server not reachable. Is swipl hanoi.pl still running?'); throw e; });
+
+/* Prolog (hanoi.pl) owns the rules when the server is running (swipl hanoi.pl).
+   When the server is not reachable (e.g. GitHub Pages), a JavaScript copy of the
+   same rules (Local) is used instead, so the game still works online. */
+const Local = {
+  n: 5, pegs: [[], [], []], moves: 0,
+  hanoi(k, f, t, v, out) { if (!k) return out; this.hanoi(k - 1, f, v, t, out); out.push([f, t]); this.hanoi(k - 1, v, t, f, out); return out; },
+  run(path, q) {
+    if (path === '/api/reset') {
+      this.n = q.n; this.moves = 0;
+      this.pegs = [Array.from({ length: q.n }, (_, i) => q.n - i), [], []];
+      return { n: q.n, min: 2 ** q.n - 1 };
+    }
+    if (path === '/api/solve') return { moves: this.hanoi(q.n, 0, 2, 1, []), min: 2 ** q.n - 1 };
+    if (path === '/api/move') {
+      const { from: f, to: t } = q, src = this.pegs[f], dst = this.pegs[t];
+      if (f === t || !src || !dst || !src.length) return { ok: false };
+      const d = src[src.length - 1];
+      if (dst.length && dst[dst.length - 1] < d) return { ok: false };
+      dst.push(src.pop()); this.moves++;
+      return { ok: true, moves: this.moves, solved: this.pegs[2].length === this.n };
+    }
+    return { ok: false };
+  }
+};
+const api = p => fetch(p)
+  .then(r => { if (!r.ok) throw new Error('no server'); return r.json(); })
+  .catch(() => {
+    const u = new URL(p, location.href), q = {};
+    u.searchParams.forEach((v, k) => q[k] = +v);
+    return Local.run(u.pathname.replace(/^.*(\/api\/\w+)$/, '$1'), q);
+  });
 let resetP = Promise.resolve(), serverMin = null;
 
 function computeGeo() {
@@ -211,7 +241,7 @@ async function doMove(f, t, my) {
   const size = pegs[f][pegs[f].length - 1], el = rings[size];
   try {
     await resetP;
-    const r = await api(`/api/move?from=${f}&to=${t}`);      // Prolog validates and counts the move
+    const r = await api(`/api/move?from=${f}&to=${t}`);      // engine validates and counts the move
     if (my !== epoch || !r.ok) return false;
     if (!paused) startClock();
     if (status === 'Ready') setStatus('Playing');
@@ -237,7 +267,7 @@ async function autoSolve() {
   let list;
   try { await resetP; list = (await api('/api/solve?n=' + n)).moves; } catch (e) { solving = false; updateUI(); return; }
   if (my !== epoch) return;
-   setMsg(`Solving with ${list.length} moves…`); updateUI();
+  setMsg(`Solving with ${list.length} moves…`); updateUI();
   for (const [f, t] of list) {
     if (paused) await new Promise(r => (gateResolve = r));   // pause gate between moves
     if (my !== epoch) return;
